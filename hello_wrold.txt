@@ -1,0 +1,1 @@
+Aqui se guardan las imagenes de contenedores de detour backend, detour frontend, sitour backend y sitour frontend
