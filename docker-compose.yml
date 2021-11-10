@@ -1,0 +1,71 @@
+version: '3.3'
+services:
+  ################################# DETOUR BACKEND #################################################################
+  detour_database:
+    restart: unless-stopped
+    image: mysql:5.7
+    env_file: .env-detour
+    ports:
+      - '3300:3306'
+    volumes:
+      - ./.detour_database:/docker-entrypoint-initdb.d
+  
+  detour_django:
+    restart: unless-stopped
+    image: docker.pkg.github.com/grupocato/detour-docker-images/detour_local:1.0-slim 
+    command: gunicorn tourism.wsgi:application --reload --bind 0.0.0.0:9000 --workers 3 --timeout 3600
+    env_file: .env-detour
+    depends_on:
+      - detour_database
+  
+  ################################# DETOUR FRONTEND #################################################################
+  detour_angular:
+    restart: always
+    hostname: localhost
+    image: docker.pkg.github.com/grupocato/detour-docker-images/detour_front_local:1.0-slim
+    depends_on:
+      - detour_django
+    ports:
+      - 1250:1250
+  
+  ################################# SITOUR BACKEND #################################################################
+  sitour_database:
+    restart: unless-stopped
+    image: mysql:5.7
+    env_file: .env-sitour
+    ports:
+      - '3310:3306'
+    volumes:
+      - ./.sitour_database:/docker-entrypoint-initdb.d
+
+  sitour_django:
+    restart: unless-stopped
+    image: docker.pkg.github.com/grupocato/detour-docker-images/sitour_local:1.0-slim
+    env_file: .env-sitour
+    command: python manage.py runserver 0.0.0.0:8081
+    depends_on:
+      - sitour_database
+    ports:
+      - "8081:8081"
+  
+  ################################# SITOUR FRONTEND #################################################################
+  sitour_angular:
+        restart: always
+        hostname: localhost
+        image: docker.pkg.github.com/grupocato/detour-docker-images/sitour_front_local:1.0-slim
+        depends_on:
+          - sitour_django
+        ports:
+            - 9002:80
+  
+  ################################# NGINX #################################################################
+  nginx:
+    image: nginx:latest
+    restart: always
+    depends_on:
+      - detour_django
+    ports:
+      - "8880:8880"
+      - "4443:4443"
+    volumes:
+      - ./base_images/nginx/dev/conf:/etc/nginx/conf.d/:ro

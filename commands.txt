@@ -1,0 +1,1 @@
+cat token.txt | docker login docker.pkg.github.com -u GrupoCATO –password-stdin
